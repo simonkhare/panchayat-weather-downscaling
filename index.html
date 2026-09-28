@@ -1,0 +1,679 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <title>Gram Mausam: village weather advice</title>
+    <style>
+        :root {
+            --bg: #edf3f6;
+            --ink: #12303a;
+            --mut: #567079;
+            --card: #fff;
+            --line: #d5e2e8;
+            --pri: #0b5d6b;
+            --onpri: #fff;
+            --acc: #e08a00;
+            --soft: #f2f7f9;
+            --good: #1f8a5b;
+            box-sizing: border-box;
+            padding-top: env(safe-area-inset-top, 0px)
+        }
+
+        @media(prefers-color-scheme:dark) {
+            :root:not([data-theme="light"]) {
+                --bg: #0b1519;
+                --ink: #e3eff3;
+                --mut: #93aab2;
+                --card: #132228;
+                --line: #263c45;
+                --pri: #14707f;
+                --soft: #182b32;
+                --good: #4cc48f;
+                --acc: #f2b13c
+            }
+        }
+
+        :root[data-theme="dark"] {
+            --bg: #0b1519;
+            --ink: #e3eff3;
+            --mut: #93aab2;
+            --card: #132228;
+            --line: #263c45;
+            --pri: #14707f;
+            --soft: #182b32;
+            --good: #4cc48f;
+            --acc: #f2b13c
+        }
+
+        * {
+            box-sizing: border-box
+        }
+
+        html {
+            scroll-padding-top: env(safe-area-inset-top, 0px)
+        }
+
+        body {
+            margin: 0;
+            background: var(--bg);
+            color: var(--ink);
+            font: 16px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif
+        }
+
+        .top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            max-width: 640px;
+            margin: 0 auto;
+            padding: 12px 14px 4px
+        }
+
+        .brand {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            font-family: Georgia, "Palatino Linotype", serif;
+            font-size: 20px
+        }
+
+        .brand>span {
+            font-size: 28px
+        }
+
+        .brand small {
+            display: block;
+            font: 12px system-ui;
+            color: var(--mut)
+        }
+
+        main {
+            max-width: 640px;
+            margin: 0 auto;
+            padding: 6px 14px 96px
+        }
+
+        h2 {
+            font-family: Georgia, "Palatino Linotype", serif;
+            font-size: 20px;
+            margin: 18px 0 6px
+        }
+
+        button,
+        select,
+        textarea {
+            font: inherit;
+            color: var(--ink)
+        }
+
+        button,
+        select {
+            background: var(--card);
+            border: 1px solid var(--line);
+            border-radius: 12px;
+            padding: 8px 12px;
+            min-height: 44px
+        }
+
+        button:focus-visible,
+        select:focus-visible,
+        textarea:focus-visible,
+        .cell:focus-visible {
+            outline: 3px solid var(--acc);
+            outline-offset: 2px
+        }
+
+        .seg {
+            display: flex;
+            background: var(--card);
+            border: 1px solid var(--line);
+            border-radius: 12px;
+            padding: 3px
+        }
+
+        .seg button {
+            border: 0;
+            background: transparent;
+            min-height: 34px;
+            padding: 4px 12px;
+            border-radius: 9px
+        }
+
+        button.on {
+            background: var(--pri);
+            color: var(--onpri);
+            border-color: var(--pri)
+        }
+
+        .ctx {
+            display: grid;
+            grid-template-columns: 1.4fr 1fr 1fr;
+            gap: 8px;
+            margin: 10px 0
+        }
+
+        .ctx label {
+            font-size: 12px;
+            color: var(--mut);
+            display: flex;
+            flex-direction: column;
+            gap: 3px
+        }
+
+        .ctx select {
+            width: 100%;
+            padding: 8px 6px
+        }
+
+        .banner {
+            background: var(--acc);
+            color: #20140a;
+            border-radius: 14px;
+            padding: 10px 14px;
+            font-weight: 600;
+            margin: 8px 0
+        }
+
+        .banner.calm {
+            background: var(--soft);
+            color: var(--ink);
+            border: 1px solid var(--line);
+            font-weight: 500
+        }
+
+        .wx {
+            background: var(--pri);
+            color: #fff;
+            border-radius: 22px;
+            padding: 18px;
+            display: flex;
+            justify-content: space-between;
+            gap: 12px;
+            align-items: flex-end;
+            flex-wrap: wrap
+        }
+
+        .big {
+            font: 64px/1 Georgia, serif;
+            margin: 6px 0
+        }
+
+        .stats {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            font-size: 14px
+        }
+
+        .wx small {
+            opacity: .85;
+            font-size: 13px
+        }
+
+        .days {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 6px;
+            margin: 10px 0
+        }
+
+        .day {
+            background: var(--card);
+            border: 1px solid var(--line);
+            border-radius: 14px;
+            text-align: center;
+            padding: 8px 2px;
+            display: flex;
+            flex-direction: column
+        }
+
+        .day.hot {
+            border-color: var(--acc);
+            border-width: 2px
+        }
+
+        .day .ic2 {
+            font-size: 24px
+        }
+
+        .badge {
+            display: inline-block;
+            font-size: 13px;
+            background: var(--soft);
+            border: 1px solid var(--line);
+            border-radius: 999px;
+            padding: 3px 10px;
+            color: var(--mut)
+        }
+
+        .badge.ok {
+            color: var(--good);
+            border-color: var(--good)
+        }
+
+        .adv {
+            list-style: none;
+            padding: 0;
+            margin: 10px 0
+        }
+
+        .adv li {
+            display: flex;
+            gap: 12px;
+            background: var(--card);
+            border: 1px solid var(--line);
+            border-radius: 16px;
+            padding: 12px 14px;
+            margin: 8px 0
+        }
+
+        .ic {
+            font-size: 24px;
+            line-height: 1.2
+        }
+
+        .card {
+            background: var(--card);
+            border: 1px solid var(--line);
+            border-radius: 18px;
+            padding: 14px;
+            margin: 12px 0
+        }
+
+        .chips {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+            margin: 8px 0
+        }
+
+        .chips button {
+            border-radius: 999px;
+            min-height: 40px
+        }
+
+        svg {
+            width: 100%;
+            height: auto;
+            display: block
+        }
+
+        .cell {
+            cursor: pointer
+        }
+
+        .leg {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 8px;
+            font-size: 12px;
+            color: var(--mut)
+        }
+
+        .leg i {
+            flex: 1;
+            height: 8px;
+            border-radius: 4px
+        }
+
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            font-size: 14px
+        }
+
+        th,
+        td {
+            padding: 6px 4px;
+            text-align: right;
+            border-bottom: 1px solid var(--line)
+        }
+
+        th:first-child,
+        td:first-child {
+            text-align: left
+        }
+
+        textarea {
+            width: 100%;
+            min-height: 140px;
+            background: var(--soft);
+            border: 1px solid var(--line);
+            border-radius: 12px;
+            padding: 10px
+        }
+
+        .cta {
+            width: 100%;
+            background: var(--pri);
+            color: var(--onpri);
+            border: 0;
+            font-weight: 700;
+            margin-top: 10px;
+            min-height: 50px;
+            border-radius: 14px
+        }
+
+        .ok {
+            color: var(--good);
+            font-weight: 600
+        }
+
+        small {
+            color: var(--mut)
+        }
+
+        .bar {
+            height: 10px;
+            border-radius: 5px;
+            background: var(--pri);
+            margin: 3px 0
+        }
+
+        .bar.b {
+            background: var(--line)
+        }
+
+        .score {
+            font: 56px/1 Georgia, serif;
+            color: var(--good)
+        }
+
+        nav {
+            position: fixed;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            display: flex;
+            background: var(--card);
+            border-top: 1px solid var(--line);
+            padding-bottom: env(safe-area-inset-bottom, 0px)
+        }
+
+        nav button {
+            flex: 1;
+            border: 0;
+            background: transparent;
+            border-radius: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            font-size: 12px;
+            padding: 8px 0;
+            color: var(--mut)
+        }
+
+        nav button span {
+            font-size: 22px
+        }
+
+        nav button.on {
+            color: var(--pri);
+            font-weight: 700;
+            background: transparent
+        }
+
+        @media(prefers-color-scheme:dark) {
+            nav button.on {
+                color: var(--good)
+            }
+        }
+
+        .grid {
+            display: grid;
+            gap: 0 18px;
+            align-items: start
+        }
+
+        .grid.map {
+            grid-template-areas: "a" "b" "c"
+        }
+
+        .ga {
+            grid-area: a
+        }
+
+        .gb {
+            grid-area: b
+        }
+
+        .gc {
+            grid-area: c
+        }
+
+        @media(hover:hover) {
+            button:hover {
+                border-color: var(--pri)
+            }
+        }
+
+        @media(min-width:640px) {
+
+            .top,
+            main {
+                max-width: 900px
+            }
+
+            body {
+                font-size: 17px
+            }
+
+            main {
+                padding-bottom: 110px
+            }
+
+            .grid {
+                grid-template-columns: 1fr 1fr
+            }
+
+            .grid.map {
+                grid-template-columns: 1fr 1.25fr;
+                grid-template-areas: "a b" "c b"
+            }
+
+            .big {
+                font-size: 76px
+            }
+
+            .day .ic2 {
+                font-size: 30px
+            }
+
+            nav {
+                left: 50%;
+                transform: translateX(-50%);
+                width: min(560px, calc(100% - 32px));
+                bottom: 14px;
+                border: 1px solid var(--line);
+                border-radius: 20px;
+                padding-bottom: 0;
+                box-shadow: 0 8px 28px rgba(0, 0, 0, .14)
+            }
+
+            nav button {
+                padding: 10px 0
+            }
+        }
+
+        @media(min-width:1024px) {
+            body {
+                padding-left: 240px
+            }
+
+            .brand {
+                display: none
+            }
+
+            .top {
+                justify-content: flex-end
+            }
+
+            nav {
+                top: 0;
+                bottom: 0;
+                left: 0;
+                transform: none;
+                width: 240px;
+                height: 100%;
+                flex-direction: column;
+                justify-content: flex-start;
+                gap: 6px;
+                padding: 20px 12px;
+                border: 0;
+                border-right: 1px solid var(--line);
+                border-radius: 0;
+                box-shadow: none
+            }
+
+            nav::before {
+                content: "🌾 Gram Mausam";
+                font: 22px Georgia, serif;
+                padding: 4px 10px 20px
+            }
+
+            nav button {
+                flex: none;
+                flex-direction: row;
+                gap: 12px;
+                justify-content: flex-start;
+                font-size: 16px;
+                padding: 12px 14px;
+                border-radius: 12px
+            }
+
+            nav button.on {
+                background: var(--soft)
+            }
+
+            .top,
+            main {
+                max-width: 1180px
+            }
+
+            main {
+                padding-bottom: 40px
+            }
+
+            .grid {
+                gap: 0 30px
+            }
+
+            .ctx {
+                gap: 12px
+            }
+        }
+
+        @media(min-width:1500px) {
+
+            .top,
+            main {
+                max-width: 1320px
+            }
+
+            body {
+                font-size: 18px
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <header class="top">
+        <div class="brand"><span>🌾</span>
+            <div>Gram Mausam<small>Village weather advice for farmers</small></div>
+        </div>
+        <div class="seg" id="lang"></div>
+    </header>
+    <main id="view"></main>
+    <nav id="nav" aria-label="Sections"></nav>
+    <script>
+        const $ = s => document.querySelector(s);
+        function rng(a) { return () => { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296 } }
+        const rnd = rng(26074), N = () => { let u = 0; for (let i = 0; i < 6; i++)u += rnd(); return (u - 3) * 1.41 };
+        const V = [{ n: 'Rainfall', u: 'mm', s: b => b / 10 }, { n: 'Max temp', u: '°C', s: b => (b - 32) / 5 }, { n: 'Humidity', u: '%', s: b => (b - 60) / 20 }];
+        const names = ['Rampur', 'Sonpur', 'Kheda', 'Mahua', 'Dhanpur', 'Belgaon', 'Nayagaon', 'Chandpur', 'Ratanpur', 'Gopalpur', 'Hariharpur', 'Jamui', 'Kishanpur', 'Laxmipur', 'Madhopur', 'Narayanpur', 'Pipra', 'Sitapur'];
+        const P = names.map((n, i) => ({ id: i, name: n, c: i % 6, r: Math.floor(i / 6), b: Math.floor((i % 6) / 2), elev: 120 + (i % 6) * 45 + N() * 70, w: Math.max(.3, 4 + N() * 2.8) }));
+        for (let b = 0; b < 3; b++) { const g = P.filter(p => p.b == b), me = g.reduce((a, p) => a + p.elev, 0) / 6, mw = g.reduce((a, p) => a + p.w, 0) / 6; g.forEach(p => { p.e = (p.elev - me) / 50; p.d = p.w - mw }) }
+        const clamp = (x, a, b) => Math.max(a, Math.min(b, x));
+        function truth(v, p, B) { if (v == 0) return B > .5 ? Math.max(0, B * (1 + .28 * p.e - .06 * p.d) + N() * 1.2) : 0; if (v == 1) return B - .33 * p.e + .15 * p.d + N() * .3; return clamp(B - 1.4 * p.d + 1.5 * p.e + N() * 1.5, 15, 100) }
+        const feat = (v, p, B) => { const s = V[v].s(B); return [1, p.e, p.d, p.e * s, p.d * s] };
+        function day() { const R = rnd() < .35 ? -Math.log(rnd()) * 14 : 0; return [R, 32 + N() * 1.5, R > 0 ? 78 + N() * 5 : 55 + N() * 8] }
+        function solve(A, y) {
+            const n = y.length; for (let i = 0; i < n; i++) { A[i][i] += 1e-6; let m = i; for (let r = i + 1; r < n; r++)if (Math.abs(A[r][i]) > Math.abs(A[m][i])) m = r;[A[i], A[m]] = [A[m], A[i]];[y[i], y[m]] = [y[m], y[i]]; for (let r = i + 1; r < n; r++) { const f = A[r][i] / A[i][i]; for (let c = i; c < n; c++)A[r][c] -= f * A[i][c]; y[r] -= f * y[i] } }
+            const x = Array(n).fill(0); for (let i = n - 1; i >= 0; i--) { let s = y[i]; for (let c = i + 1; c < n; c++)s -= A[i][c] * x[c]; x[i] = s / A[i][i] } return x
+        }
+        const pred = (v, p, B) => { const f = feat(v, p, B), y = B + f.reduce((a, x, i) => a + x * W[v][i], 0); return v == 0 ? Math.max(0, y) : v == 2 ? clamp(y, 15, 100) : y };
+        const W = [], M = [];
+        for (let v = 0; v < 3; v++) {
+            const A = Array.from({ length: 5 }, () => Array(5).fill(0)), y = Array(5).fill(0);
+            for (let d = 0; d < 300; d++)for (let b = 0; b < 3; b++) { const B = day()[v]; P.filter(p => p.b == b).forEach(p => { const f = feat(v, p, B), t = truth(v, p, B) - B; for (let i = 0; i < 5; i++) { y[i] += f[i] * t; for (let j = 0; j < 5; j++)A[i][j] += f[i] * f[j] } }) }
+            W[v] = solve(A, y)
+        }
+        for (let v = 0; v < 3; v++) {
+            let e0 = 0, e1 = 0, n = 0; for (let d = 0; d < 60; d++)for (let b = 0; b < 3; b++) { const B = day()[v]; P.filter(p => p.b == b).forEach(p => { const t = truth(v, p, B); e0 += (t - B) ** 2; e1 += (t - pred(v, p, B)) ** 2; n++ }) }
+            M[v] = { base: Math.sqrt(e0 / n), model: Math.sqrt(e1 / n) }
+        }
+        const FC = [[[0, 3, 24, 47, 9], [33, 35, 36, 38, 35], [58, 61, 74, 86, 68]], [[0, 0, 14, 33, 3], [34, 36, 37, 39, 36], [55, 58, 70, 82, 64]], [[0, 6, 31, 52, 12], [32, 34, 35, 37, 34], [60, 63, 78, 88, 70]]];
+        const fc = (p, v, d) => pred(v, p, FC[p.b][v][d]);
+        const S = { tab: 'home', v: 0, d: 2, lvl: 'p', sel: 0, lang: 'en', crop: 'Rice', stage: 'Flowering', pub: {} };
+        const CROPS = { Rice: 36, Maize: 38, Cotton: 40 }, STAGES = ['Sowing', 'Vegetative', 'Flowering', 'Harvest'];
+        function advise(p, crop, stage) {
+            const R = [0, 1, 2, 3, 4].map(d => fc(p, 0, d)), T = [0, 1, 2, 3, 4].map(d => fc(p, 1, d)), H = [0, 1, 2, 3, 4].map(d => fc(p, 2, d)), out = [];
+            const L = (e, h) => out.push({ en: e, hi: h, i: (IC.find(x => e.startsWith(x[0])) || [0, '✅'])[1] }), tot = R.reduce((a, b) => a + b, 0), dry = R.indexOf(Math.min(...R)) + 1, hv = R.findIndex((r, i) => i < 4 && r >= 40);
+            if (hv >= 0) L(`Heavy rain (${R[hv].toFixed(0)} mm) expected on day ${hv + 1}. Drain excess water from the ${crop.toLowerCase()} field. Postpone fertilizer and spraying.`, `दिन ${hv + 1} पर भारी वर्षा (${R[hv].toFixed(0)} मिमी) की संभावना। ${crop} के खेत से पानी निकालें। खाद और छिड़काव टालें।`);
+            if (stage == 'Sowing') tot >= 20 ? L(`Rain is likely this week. Sow on the driest day (day ${dry}).`, `इस सप्ताह वर्षा की संभावना है। सबसे सूखे दिन (दिन ${dry}) बुवाई करें।`) : L('Soil may stay dry. Sow only if there is enough moisture, or wait for rain.', 'मिट्टी सूखी रह सकती है। नमी हो तभी बुवाई करें, या वर्षा की प्रतीक्षा करें।');
+            if ((stage == 'Vegetative' || stage == 'Flowering') && tot < 5) L(`Dry week ahead (${tot.toFixed(0)} mm). Irrigate the ${crop.toLowerCase()} crop, and keep soil moist at ${stage.toLowerCase()}.`, `आगे सप्ताह सूखा रहेगा (${tot.toFixed(0)} मिमी)। ${crop} की सिंचाई करें और मिट्टी में नमी बनाए रखें।`);
+            const tm = Math.max(...T), td = T.indexOf(tm) + 1; if (stage == 'Flowering' && tm >= CROPS[crop]) L(`Heat up to ${tm.toFixed(0)}°C on day ${td} can hurt flowering. Irrigate in the evening. Avoid afternoon spraying.`, `दिन ${td} पर ${tm.toFixed(0)}°C तक गर्मी फूल आने पर असर डाल सकती है। शाम को सिंचाई करें। दोपहर में छिड़काव न करें।`);
+            if (H.some((h, i) => h >= 80 && R[i] >= 5)) L(`Humid and wet spell: watch for fungal disease. If symptoms appear, spray on the driest day (day ${dry}).`, `नमी और वर्षा का दौर: फफूंद रोग पर नज़र रखें। लक्षण दिखें तो सबसे सूखे दिन (दिन ${dry}) छिड़काव करें।`);
+            if (stage == 'Harvest') { const r = R.findIndex((x, i) => i < 3 && x >= 10); r >= 0 ? L(`Rain expected on day ${r + 1}. Harvest and dry the produce before it, and cover stored grain.`, `दिन ${r + 1} पर वर्षा संभव। उससे पहले कटाई और सुखाई करें, भंडारित अनाज ढकें।`) : L('Dry days ahead: good window to harvest and dry the produce.', 'आगे सूखे दिन हैं: कटाई और सुखाई का अच्छा समय।') }
+            if (!out.length) L('No weather risk in the next 5 days. Continue normal field work.', 'अगले 5 दिनों में मौसम का कोई जोखिम नहीं। सामान्य खेती के काम जारी रखें।'); return out
+        }
+        function col(v, x) { const m = [[[232, 240, 244], [30, 90, 160], x / 50], [[250, 240, 200], [200, 60, 40], (x - 28) / 14], [[240, 244, 236], [20, 120, 110], (x - 40) / 60]][v], t = clamp(m[2], 0, 1); return { c: `rgb(${m[0].map((a, i) => Math.round(a + (m[1][i] - a) * t))})`, dark: t > .55 } }
+        const IC = [['Heavy', '🌧'], ['Dry week', '💧'], ['Soil', '🌱'], ['Rain is', '🌱'], ['Heat', '🌡'], ['Humid', '🍄'], ['Rain expected', '🌾'], ['Dry days', '🌾']];
+        const li = (t, i = '✅') => `<li><span class="ic">${i}</span><span>${t}</span></li>`;
+        const opts = (a, cur) => a.map(x => { const k = Array.isArray(x) ? x[0] : x, l = Array.isArray(x) ? x[1] : x; return `<option value="${k}" ${k == cur ? 'selected' : ''}>${l}</option>` }).join('');
+        const DN = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'], dn = i => i ? DN[(new Date().getDay() + i) % 7] : 'Today', wi = (r, t) => r >= 25 ? '🌧' : r >= 5 ? '🌦' : t >= 37 ? '☀️' : '⛅', D5 = [0, 1, 2, 3, 4];
+        const NAV = [['home', '🏡', 'Today'], ['map', '🗺️', 'Map'], ['off', '📝', 'Officer'], ['acc', '📊', 'Accuracy']];
+        const ctx = () => `<div class="ctx"><label>Village<select data-b="sel">${opts(P.map(p => [p.id, p.name + ' · Block ' + 'ABC'[p.b]]), S.sel)}</select></label><label>Crop<select data-b="crop">${opts(Object.keys(CROPS), S.crop)}</select></label><label>Stage<select data-b="stage">${opts(STAGES, S.stage)}</select></label></div>`;
+        const chip = (k, val, label) => `<button data-b="${k}:${val}" class="${S[k] == val ? 'on' : ''}">${label}</button>`;
+        function bind() {
+            document.querySelectorAll('[data-b]').forEach(el => { const h = () => { const [k, val] = el.dataset.b.split(':'); const x = el.tagName == 'SELECT' ? el.value : val; S[k] = k == 'crop' || k == 'stage' || k == 'lang' || k == 'lvl' ? x : +x; S.msg = ''; draw() }; if (el.tagName == 'SELECT') el.onchange = h; else el.onclick = h });
+            document.querySelectorAll('.cell').forEach(el => el.onclick = el.onkeydown = e => { if (e.type == 'click' || e.key == 'Enter') { S.sel = +el.dataset.i; draw() } })
+        }
+        $('#nav').onclick = e => { const b = e.target.closest('[data-t]'); if (b) { S.tab = b.dataset.t; draw(); scrollTo(0, 0) } };
+        function draw() {
+            const p = P[S.sel], v = $('#view'), a = advise(p, S.crop, S.stage);
+            $('#lang').innerHTML = chip('lang', 'en', 'English') + chip('lang', 'hi', 'हिन्दी');
+            $('#nav').innerHTML = NAV.map(([k, i, l]) => `<button data-t="${k}" class="${S.tab == k ? 'on' : ''}"><span>${i}</span>${l}</button>`).join('');
+            if (S.tab == 'home') {
+                let mx = 0, mp, md; P.forEach(q => D5.forEach(d => { const x = fc(q, 0, d); if (x > mx) { mx = x; mp = q; md = d } }));
+                const q = S.pub[p.id + '|' + S.crop], T0 = fc(p, 1, 0), R0 = fc(p, 0, 0), H0 = fc(p, 2, 0), lines = q ? q[S.lang].split('\n').map((t, k) => li(t, q.i[k] || '🌾')) : a.map(x => li(x[S.lang], x.i));
+                v.innerHTML = `<div class="grid"><div><div class="banner ${mx >= 40 ? '' : 'calm'}">${mx >= 40 ? `🌧 Heavy rain watch: up to ${mx.toFixed(0)} mm near ${mp.name} on ${dn(md).toLowerCase() === 'today' ? 'today' : dn(md)}` : '☀️ No heavy rain expected in the district for 5 days'}</div>${ctx()}
+<section class="wx"><div><small>${p.name}, Block ${'ABC'[p.b]}</small><div class="big">${T0.toFixed(0)}°</div><div>${wi(R0, T0)} ${R0 >= 5 ? 'Rain likely today' : 'Mostly dry today'}</div></div><div class="stats"><span>💧 Rain <b>${R0.toFixed(0)} mm</b></span><span>💦 Humidity <b>${H0.toFixed(0)}%</b></span><small>Typical error ±${M[1].model.toFixed(1)}°C</small></div></section>
+<div class="days">${D5.map(d => { const r = fc(p, 0, d), t = fc(p, 1, d); return `<div class="day ${r >= 40 ? 'hot' : ''}"><small>${dn(d)}</small><span class="ic2">${wi(r, t)}</span><b>${t.toFixed(0)}°</b><small>${r.toFixed(0)} mm</small></div>` }).join('')}</div>
+</div><div><h2>What to do on your ${S.crop.toLowerCase()} farm</h2><span class="badge ${q ? 'ok' : ''}">${q ? '✔ Approved by officer at ' + q.t : 'Auto advice, waiting for officer review'}</span><ul class="adv">${lines.join('')}</ul></div></div>`
+            }
+            if (S.tab == 'map') {
+                const u = V[S.v].u, lo = [0, 28, 40][S.v], hi = [50, 42, 100][S.v], cells = P.map(q => { const x = S.lvl == 'p' ? fc(q, S.v, S.d) : FC[q.b][S.v][S.d], k = col(S.v, x), tc = k.dark ? '#fff' : '#12303a'; return `<g class="cell" tabindex="0" data-i="${q.id}" role="button" aria-label="${q.name} ${x.toFixed(1)} ${u}"><rect x="${q.c * 60 + 2}" y="${q.r * 60 + 2}" width="56" height="56" rx="10" fill="${k.c}" stroke="${q.id == S.sel ? 'var(--acc)' : 'none'}" stroke-width="3"/><text x="${q.c * 60 + 30}" y="${q.r * 60 + 32}" text-anchor="middle" font-size="15" font-weight="700" fill="${tc}">${x.toFixed(S.v == 1 ? 1 : 0)}</text><text x="${q.c * 60 + 30}" y="${q.r * 60 + 47}" text-anchor="middle" font-size="8" fill="${tc}">${q.name}</text></g>` }).join('');
+                v.innerHTML = `<div class="grid map"><div class="ga"><h2>District map</h2><div class="chips">${V.map((x, i) => chip('v', i, x.n)).join('')}</div><div class="chips">${D5.map(d => chip('d', d, dn(d))).join('')}</div><div class="chips">${chip('lvl', 'p', 'Panchayat forecast')}${chip('lvl', 'b', 'Block forecast')}</div></div>
+<div class="card gb"><svg viewBox="0 0 360 180" role="img" aria-label="Map of 18 Panchayats in 3 blocks">${cells}<path d="M120 0V180M240 0V180" stroke="var(--card)" stroke-width="5"/></svg><div class="leg"><span>${lo}</span><i style="background:linear-gradient(90deg,${col(S.v, lo).c},${col(S.v, hi).c})"></i><span>${hi}${u}</span></div><small>Blocks A, B, C from left. Tap a village for details.</small></div>
+<div class="card gc"><b>${p.name}</b> <small>Block ${'ABC'[p.b]} · ${p.elev.toFixed(0)} m high · ${p.w.toFixed(1)} km from water</small><table><tr><th></th>${D5.map(d => `<th>${dn(d).slice(0, 3)}</th>`).join('')}</tr>${V.map((x, i) => `<tr><td>${x.n}</td>${D5.map(d => `<td><b>${fc(p, i, d).toFixed(i == 1 ? 0 : 0)}</b></td>`).join('')}</tr>`).join('')}<tr><td><small>Block rain</small></td>${D5.map(d => `<td><small>${FC[p.b][0][d]}</small></td>`).join('')}</tr></table></div></div>`
+            }
+            if (S.tab == 'off') {
+                v.innerHTML = `<div class="grid"><div><h2>Review and publish</h2><small>Pick a village, crop and stage. Check the advice, edit it, then publish.</small>${ctx()}<div class="card"><ul class="adv" style="margin-top:0">${a.map(x => li(x[S.lang], x.i)).join('')}</ul><label for="ed"><small>Edit the text farmers will see</small></label><textarea id="ed">${a.map(x => x[S.lang]).join('\n')}</textarea><button class="cta" id="pubb">Publish to farmers</button>${S.msg ? `<p class="ok">${S.msg}</p>` : ''}</div></div><div><div class="card"><b>Published so far: ${Object.keys(S.pub).length}</b><ul>${Object.keys(S.pub).map(k => { const [i, c] = k.split('|'); return `<li>${P[i].name}, ${c}</li>` }).join('') || '<li><small>Nothing yet. Publish your first advisory above.</small></li>'}</ul></div></div></div>`;
+                $('#pubb').onclick = () => { const o = advise(p, S.crop, S.stage).map(x => x[S.lang == 'en' ? 'hi' : 'en']).join('\n'), k = p.id + '|' + S.crop; S.pub[k] = { [S.lang]: $('#ed').value, [S.lang == 'en' ? 'hi' : 'en']: o, t: new Date().toLocaleTimeString(), i: a.map(x => x.i) }; S.msg = 'Published for ' + p.name + ' (' + S.crop + '). Farmers can see it on the Today tab.'; draw() }
+            }
+            if (S.tab == 'acc') {
+                const avg = M.reduce((s, m) => s + 1 - m.model / m.base, 0) / 3 * 100, mx = Math.max(...M.map(m => m.base));
+                v.innerHTML = `<h2>Is village-level forecasting better?</h2><div class="grid"><div class="card"><div class="score">${avg.toFixed(0)}%</div><p>less error than using the block forecast for every village, on test days the model never saw.</p></div><div class="card">${M.map((m, i) => `<b>${V[i].n}</b> <small>error in ${V[i].u}</small><div class="bar b" style="width:${100 * m.base / mx}%"></div><div class="bar" style="width:${100 * m.model / mx}%"></div><small>Block forecast ${m.base.toFixed(2)} · Our model ${m.model.toFixed(2)}</small><br><br>`).join('')}<small>Grey: block forecast. Blue: our model. This uses synthetic data, so it shows the pipeline works and does not prove accuracy on real IMD data.</small></div></div>`
+            }
+            bind()
+        }
+        draw();
+    </script>
+</body>
+
+</html>
